@@ -1,0 +1,48 @@
+{
+  "name": "vndb-api",
+  "version": "1.0.0",
+  "description": "An API wrapper for the VNDB.org API",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "lint": "eslint . --ext .js,.ts",
+    "test": "jest && codecov",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
+  },
+  "files": [
+    "lib/*/**"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PragunSaini/vndb-api.git"
+  },
+  "keywords": [
+    "vndb",
+    "api"
+  ],
+  "author": "Pragun Saini",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PragunSaini/vndb-api/issues"
+  },
+  "homepage": "https://github.com/PragunSaini/vndb-api#readme",
+  "devDependencies": {
+    "@types/jest": "^25.1.1",
+    "@typescript-eslint/eslint-plugin": "^2.18.0",
+    "@typescript-eslint/parser": "^2.18.0",
+    "codecov": "^3.6.4",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "jest": "^25.1.0",
+    "prettier": "^1.19.1",
+    "ts-jest": "^25.1.0",
+    "typescript": "^3.7.5"
+  }
+}
