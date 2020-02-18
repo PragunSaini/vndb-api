@@ -2,16 +2,17 @@ import VNDB from '../src/index'
 
 describe('VNDB Client initialization tests', () => {
   const clientName = 'TambourineMan'
+  let vndb: VNDB
 
   test('Create client without custom options', () => {
-    const vndb = new VNDB(clientName)
+    vndb = new VNDB(clientName)
     expect(vndb.options).toBeDefined()
     expect(vndb.limiter).toBeDefined()
     expect(vndb.pool).toBeDefined()
   })
 
   test('Client null/undefined keys not used', () => {
-    const vndb = new VNDB(clientName, { host: undefined, port: undefined })
+    vndb = new VNDB(clientName, { host: undefined, port: undefined })
     expect(vndb.options).toBeDefined()
     Object.keys(vndb.options).forEach(k => {
       expect(vndb.options[k]).toBeDefined()
@@ -19,5 +20,12 @@ describe('VNDB Client initialization tests', () => {
     })
     expect(vndb.limiter).toBeDefined()
     expect(vndb.pool).toBeDefined()
+    vndb.pool.clear()
+  })
+
+  afterEach(() => {
+    vndb.pool.drain().then(() => {
+      vndb.pool.clear()
+    })
   })
 })

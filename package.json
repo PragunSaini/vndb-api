@@ -9,7 +9,7 @@
     "watch": "tsc -w",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "eslint . --ext .js,.ts",
-    "test": "jest --verbose && codecov",
+    "test": "jest --verbose --detectOpenHandles && codecov",
     "docs": "typedoc --out docs src",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",

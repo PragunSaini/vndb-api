@@ -15,8 +15,10 @@ describe('VNDB Connection Object', () => {
   }
   const clientName = 'EradicateAllEnlightenment'
 
+  let conn: VNDBConnection
+
   test('Invalid hostname', async () => {
-    const conn = new VNDBConnection()
+    conn = new VNDBConnection()
     try {
       await conn.connect('thisisinvalidhost', defaultOptions.port, defaultOptions.encoding)
     } catch (e) {
@@ -26,7 +28,7 @@ describe('VNDB Connection Object', () => {
   })
 
   test('Invalid port', async () => {
-    const conn = new VNDBConnection()
+    conn = new VNDBConnection()
     try {
       await conn.connect(defaultOptions.host, 1234, defaultOptions.encoding)
     } catch (e) {
@@ -36,20 +38,20 @@ describe('VNDB Connection Object', () => {
   })
 
   test('Connection established', async () => {
-    const conn = new VNDBConnection()
+    conn = new VNDBConnection()
     await conn.connect(defaultOptions.host, defaultOptions.port, defaultOptions.encoding)
     expect(conn.socket).toBeDefined()
   })
 
   test('Disconnect', async () => {
-    const conn = new VNDBConnection()
+    conn = new VNDBConnection()
     await conn.connect(defaultOptions.host, defaultOptions.port, defaultOptions.encoding)
     await conn.disconnect()
     expect(conn.socket).toBeUndefined()
   })
 
   test('Login without connect', async () => {
-    const conn = new VNDBConnection()
+    conn = new VNDBConnection()
     try {
       await conn.login(clientName)
     } catch (e) {
@@ -58,7 +60,7 @@ describe('VNDB Connection Object', () => {
   })
 
   test('Multiple logins not allowed', async () => {
-    const conn = new VNDBConnection()
+    conn = new VNDBConnection()
     await conn.connect(defaultOptions.host, defaultOptions.port, defaultOptions.encoding)
     try {
       await conn.login(clientName)
@@ -69,8 +71,12 @@ describe('VNDB Connection Object', () => {
   })
 
   test('Succesfull Login', async () => {
-    const conn = new VNDBConnection()
+    conn = new VNDBConnection()
     await conn.connect(defaultOptions.host, defaultOptions.port, defaultOptions.encoding)
     await conn.login(clientName)
+  })
+
+  afterEach(() => {
+    conn.disconnect()
   })
 })
