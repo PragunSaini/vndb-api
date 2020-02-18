@@ -1,9 +1,23 @@
-import Hello, { Greeter } from '../src/index'
+import VNDB from '../src/index'
 
-test('My Greeter', () => {
-  expect(Greeter('Pragun')).toBe('Hello, Pragun')
-})
+describe('VNDB Client initialization tests', () => {
+  const clientName = 'TambourineMan'
 
-test('My Hello', () => {
-  expect(Hello('Pragun')).toBe('Hullo, Pragun')
+  test('Create client without custom options', () => {
+    const vndb = new VNDB(clientName)
+    expect(vndb.options).toBeDefined()
+    expect(vndb.limiter).toBeDefined()
+    expect(vndb.pool).toBeDefined()
+  })
+
+  test('Client null/undefined keys not used', () => {
+    const vndb = new VNDB(clientName, { host: undefined, port: undefined })
+    expect(vndb.options).toBeDefined()
+    Object.keys(vndb.options).forEach(k => {
+      expect(vndb.options[k]).toBeDefined()
+      expect(vndb.options[k]).not.toBeNull()
+    })
+    expect(vndb.limiter).toBeDefined()
+    expect(vndb.pool).toBeDefined()
+  })
 })
