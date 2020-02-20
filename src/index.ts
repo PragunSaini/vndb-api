@@ -1,6 +1,6 @@
 import genericPool, { Pool } from 'generic-pool'
 import { RateLimiter } from 'limiter'
-import { filterObject } from './utils'
+import { filterObject, VNDBResponse } from './utils'
 import VNDBConnection from './connection'
 
 /**
@@ -18,14 +18,14 @@ interface ConnectionOptions {
 }
 
 /**
- * The default connection options
+ * The default connection options, allows 10 requests per 30 seconds and 1 to 10 connections, you can them by passing your own connection options
  */
 const defaultOptions: ConnectionOptions = {
   host: 'api.vndb.org',
   port: 19535,
   encoding: 'utf-8',
-  commandLimit: 200,
-  commandInterval: 60000,
+  commandLimit: 10,
+  commandInterval: 30000,
   minConnection: 1,
   maxConnection: 10,
   connectionTimeout: 30000,
@@ -86,18 +86,30 @@ class VNDB {
       },
     )
   }
-}
 
-async function wow() {
-  try {
-    const vn = new VNDBConnection()
-    await vn.connect(defaultOptions.host as string, defaultOptions.port as number)
-    await vn.login('asshole')
-    const res = await vn.query('get ulist labels (uid = 165683)')
-    console.log(res.items.map(r => r.labels))
-    await vn.disconnect()
-  } catch (e) {
-    console.log(e)
+  /**
+   * Send a query to the VNDB API by creating a [[VNDBConnection]]
+   * @param query A VNDB API compatible query string, @see {@link https://vndb.org/d11}
+   * @return Resolves when the response is recieved
+   */
+  query(query: string): Promise<VNDBResponse> {
+    return new Promise((resolve, reject) => {
+      this.limiter.removeTokens(1, () => {
+        const connection = this.pool.acquire()
+        connection.then(conn => {
+          conn
+            .query(query)
+            .then(response => {
+              this.pool.release(conn)
+              resolve(response)
+            })
+            .catch(e => {
+              this.pool.release(conn)
+              reject(e)
+            })
+        })
+      })
+    })
   }
 }
 

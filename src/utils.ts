@@ -20,7 +20,7 @@ function wait(duration: number): Promise<void> {
 }
 
 /**
- * Represents a Response object
+ * Represents a general Response object, can have varying types of properties depending on the request, @see {@link https://vndb.org/d11}
  */
 interface VNDBResponse {
   status?: string
@@ -29,6 +29,9 @@ interface VNDBResponse {
   [key: string]: any
 }
 
+/**
+ * Represents an Error Response object
+ */
 interface VNDBError extends VNDBResponse {
   id?: string
   msg?: string
@@ -47,8 +50,14 @@ function parseResponse(query: string, response: string): object {
   const rawBody: string = (response.match(/{.+}/) as RegExpMatchArray)[0]
   const body: VNDBResponse = JSON.parse(rawBody)
   body.status = status
-  const searchType: string = query.substring(4, query.indexOf(' ', 4))
-  body.searchType = searchType
+  if (status == 'dbstats') {
+    body.searchType = 'dbstats'
+  } else {
+    // using 4 because currently only get requests are supported
+    const searchType: string = query.substring(4, query.indexOf(' ', 4))
+    body.searchType = searchType
+  }
+
   return body
 }
 
