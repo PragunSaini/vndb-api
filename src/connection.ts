@@ -1,5 +1,6 @@
 import tls from 'tls'
 import { randomBytes } from 'crypto'
+import { wait, parseResponse, VNDBResponse, VNDBError } from './utils'
 
 /**
  * A VNDB connection object. Uses a TLS Socket to provide the connection
@@ -96,6 +97,51 @@ class VNDBConnection {
         resolve()
       })
       this.socket?.end()
+    })
+  }
+
+  /**
+   * Used to send a query to the VNDB API
+   * @param query A VNDB API compatible query string, @see {@link https://vndb.org/d11}
+   * @return Resolves when the response is recieved
+   */
+  query(query: string): Promise<VNDBResponse> {
+    return new Promise((resolve, reject) => {
+      // If not connected, error
+      if (this.socket == undefined) {
+        reject({ code: 'NOTCONNECTED', message: 'Please connect first' })
+      }
+
+      // Actions to perform when data is recieved
+      this.socket?.on('data', data => {
+        const chunk: string = data.toString()
+        let response: string | VNDBResponse = chunk.substring(0, chunk.indexOf(this.eol))
+        this.socket?.removeAllListeners('data')
+        response = parseResponse(query, response)
+
+        // handle errors
+        if (response.status == 'error') {
+          const error: VNDBError = response
+          if (error.id == 'throttled') {
+            wait((error.fullwait as number) * 1000).then(() => {
+              this.query(query)
+                .then(delayedResponse => {
+                  resolve(delayedResponse)
+                })
+                .catch(e => {
+                  reject(e)
+                })
+            })
+          } else {
+            reject({ ...error, code: error.id?.toUpperCase() })
+          }
+        } else {
+          resolve(response)
+        }
+      })
+
+      // Send the query
+      this.socket?.write(`${query}${this.eol}`)
     })
   }
 }

@@ -88,4 +88,17 @@ class VNDB {
   }
 }
 
+async function wow() {
+  try {
+    const vn = new VNDBConnection()
+    await vn.connect(defaultOptions.host as string, defaultOptions.port as number)
+    await vn.login('asshole')
+    const res = await vn.query('get ulist labels (uid = 165683)')
+    console.log(res.items.map(r => r.labels))
+    await vn.disconnect()
+  } catch (e) {
+    console.log(e)
+  }
+}
+
 export default VNDB
