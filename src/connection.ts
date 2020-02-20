@@ -31,6 +31,7 @@ class VNDBConnection {
   connect(host: string, port: number, encoding = 'utf-8'): Promise<void> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
+        this.socket = undefined
         reject({
           code: 'CONTIMEOUT',
           message: 'Connection timed out',
@@ -46,6 +47,7 @@ class VNDBConnection {
       })
 
       this.socket.once('error', e => {
+        this.socket = undefined
         reject({ ...e, message: 'Connection failed' })
       })
     })
@@ -92,6 +94,7 @@ class VNDBConnection {
         resolve()
       }
       this.socket?.once('end', () => {
+        this.socket = undefined
         resolve()
       })
       this.socket?.end()
@@ -131,7 +134,7 @@ class VNDBConnection {
                 })
             })
           } else {
-            reject({ ...error, code: error.id?.toUpperCase() })
+            reject(error)
           }
         } else {
           resolve(response)

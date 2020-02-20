@@ -111,6 +111,15 @@ class VNDB {
       })
     })
   }
+
+  /**
+   * Destroy this client and close any open connections
+   */
+  destroy(): void {
+    this.pool.drain().then(() => {
+      this.pool.clear()
+    })
+  }
 }
 
 export default VNDB

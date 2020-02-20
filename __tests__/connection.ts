@@ -27,16 +27,6 @@ describe('VNDB Connection Object', () => {
     }
   })
 
-  test('Invalid port', async () => {
-    conn = new VNDBConnection()
-    try {
-      await conn.connect(defaultOptions.host, 1234, defaultOptions.encoding)
-    } catch (e) {
-      expect(e.code == 'CONTIMEOUT' || e.code == 'ENOTFOUND').toBe(true)
-      expect(conn.socket).toBeUndefined()
-    }
-  })
-
   test('Connection established', async () => {
     conn = new VNDBConnection()
     await conn.connect(defaultOptions.host, defaultOptions.port, defaultOptions.encoding)

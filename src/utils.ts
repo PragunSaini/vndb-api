@@ -45,12 +45,15 @@ interface VNDBError extends VNDBResponse {
  * @param response THe raw response from VNDB
  * @return Response in JSON form
  */
-function parseResponse(query: string, response: string): object {
+function parseResponse(query: string, response: string): VNDBResponse {
   const status: string = (response.match(/(\S+) {/) as RegExpMatchArray)[1]
   const rawBody: string = (response.match(/{.+}/) as RegExpMatchArray)[0]
   const body: VNDBResponse = JSON.parse(rawBody)
   body.status = status
-  if (status == 'dbstats') {
+  if (status == 'error') {
+    body.searchType = query
+    body.code = (body as VNDBError).id?.toUpperCase()
+  } else if (status == 'dbstats') {
     body.searchType = 'dbstats'
   } else {
     // using 4 because currently only get requests are supported

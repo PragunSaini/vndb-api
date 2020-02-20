@@ -24,8 +24,6 @@ describe('VNDB Client initialization tests', () => {
   })
 
   afterEach(() => {
-    vndb.pool.drain().then(() => {
-      vndb.pool.clear()
-    })
+    vndb.destroy()
   })
 })
