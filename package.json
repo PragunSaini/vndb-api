@@ -50,7 +50,7 @@
     "typescript": "^3.7.5"
   },
   "dependencies": {
-    "generic-pool": "^3.7.1",
-    "limiter": "^1.1.5"
+    "limiter": "^1.1.5",
+    "tarn": "^2.0.0"
   }
 }

@@ -64,4 +64,17 @@ function parseResponse(query: string, response: string): VNDBResponse {
   return body
 }
 
-export { filterObject, wait, parseResponse, VNDBResponse, VNDBError }
+/**
+ * Utility to convert API errors to valid JSON format, only used for connection/login errors, query errors are handled by [[parseResponse]]
+ * @param error The raw error response
+ * @return Error object
+ */
+function errorParser(error: string): VNDBError {
+  const status: string = (error.match(/(\S+) {/) as RegExpMatchArray)[1]
+  const rawBody: string = (error.match(/{.+}/) as RegExpMatchArray)[0]
+  const body: VNDBError = JSON.parse(rawBody)
+  body.status = status
+  return body
+}
+
+export { filterObject, wait, parseResponse, errorParser, VNDBResponse, VNDBError }

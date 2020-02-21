@@ -1,4 +1,4 @@
-import { filterObject, parseResponse } from '../src/utils'
+import { wait, filterObject, parseResponse, errorParser } from '../src/utils'
 
 describe('filterObject', () => {
   const testObj = {
@@ -54,6 +54,7 @@ describe('parseResponse', () => {
     expect(response.status).toBe('error')
     expect(response.searchType).toBeDefined()
     expect(response.searchType).toBe(query)
+    expect(response.code).toBe('PARSE')
   })
 
   test('get vn search type', () => {
@@ -72,5 +73,25 @@ describe('parseResponse', () => {
     expect(response.status).toBe('results')
     expect(response.searchType).toBeDefined()
     expect(response.searchType).toBe('ulist')
+  })
+})
+
+describe('errorParser', () => {
+  const errorString = 'error {"field":"client","id":"badarg","msg":"Invalid client name"}'
+  const error = errorParser(errorString)
+  expect(error.status).toBeDefined()
+  expect(error.status).toBe('error')
+  expect(error.id).toBe('badarg')
+})
+
+describe('wait', () => {
+  jest.useFakeTimers()
+
+  test('wait promise resolves', () => {
+    wait(1000).then(() => {
+      // resolved
+    })
+
+    expect(setTimeout).toHaveBeenCalledTimes(1)
   })
 })

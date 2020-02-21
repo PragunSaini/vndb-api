@@ -1,7 +1,8 @@
-import genericPool, { Pool } from 'generic-pool'
+import { Pool, TimeoutError } from 'tarn'
 import { RateLimiter } from 'limiter'
 import { filterObject, VNDBResponse } from './utils'
 import VNDBConnection from './connection'
+import { PromiseInspection } from 'tarn/lib/PromiseInspection'
 
 /**
  * An object that contains the various connection options used to connect to the VNDB API
@@ -15,6 +16,9 @@ interface ConnectionOptions {
   minConnection?: number
   maxConnection?: number
   connectionTimeout?: number
+  idleTimeoutMillis?: number
+  acquireTimeout?: number
+  propagateCreateError?: boolean
 }
 
 /**
@@ -29,6 +33,9 @@ const defaultOptions: ConnectionOptions = {
   minConnection: 1,
   maxConnection: 10,
   connectionTimeout: 30000,
+  idleTimeoutMillis: 30000,
+  acquireTimeout: 60000,
+  propagateCreateError: false,
 }
 
 /**
@@ -43,6 +50,11 @@ class VNDB {
   limiter: RateLimiter
   /** A pool of connections to the API */
   pool: Pool<VNDBConnection>
+  /**
+   * @hidden
+   * Used to store the error object for any error during creation of a connection
+   */
+  private error: Error | undefined
 
   /**
    * Creates a new VNDB client
@@ -53,38 +65,47 @@ class VNDB {
     options = filterObject(options)
     this.options = { ...defaultOptions, ...options }
     this.limiter = new RateLimiter(this.options.commandLimit as number, this.options.commandInterval as number)
-    this.pool = genericPool.createPool(
-      {
-        create: () => {
-          return new Promise((resolve, reject) => {
-            const conn = new VNDBConnection()
-            conn
-              .connect(this.options.host as string, this.options.port as number, this.options.encoding)
-              .then(() => {
-                conn
-                  .login(clientName)
-                  .then(() => {
-                    resolve(conn)
-                  })
-                  .catch(e => {
-                    reject(e)
-                  })
-              })
-              .catch(e => {
-                reject(e)
-              })
-          })
-        },
-        destroy: conn => {
-          return conn.disconnect()
-        },
+    this.pool = new Pool({
+      create: (): PromiseLike<VNDBConnection> => {
+        return new Promise((resolve, reject) => {
+          const conn = new VNDBConnection()
+          conn
+            .connect(
+              this.options.host as string,
+              this.options.port as number,
+              this.options.encoding as string,
+              this.options.connectionTimeout as number,
+            )
+            .then(() => {
+              conn
+                .login(clientName)
+                .then(() => {
+                  resolve(conn)
+                })
+                .catch(e => {
+                  reject(e)
+                })
+            })
+            .catch(e => {
+              reject(e)
+            })
+        })
       },
-      {
-        max: this.options.maxConnection,
-        min: this.options.minConnection,
-        idleTimeoutMillis: this.options.connectionTimeout,
+      destroy: (conn: VNDBConnection): Promise<void> => {
+        return conn.disconnect()
       },
-    )
+
+      max: this.options.maxConnection as number,
+      min: this.options.minConnection as number,
+      idleTimeoutMillis: this.options.idleTimeoutMillis,
+      acquireTimeoutMillis: this.options.acquireTimeout,
+      propagateCreateError: this.options.propagateCreateError,
+    })
+
+    // Adds an event listener to the pool, if any resource creation fails, stores the reason in this.error
+    this.pool.on('createFail', (id, err) => {
+      this.error = err
+    })
   }
 
   /**
@@ -95,19 +116,29 @@ class VNDB {
   query(query: string): Promise<VNDBResponse> {
     return new Promise((resolve, reject) => {
       this.limiter.removeTokens(1, () => {
-        const connection = this.pool.acquire()
-        connection.then(conn => {
-          conn
-            .query(query)
-            .then(response => {
-              this.pool.release(conn)
-              resolve(response)
-            })
-            .catch(e => {
-              this.pool.release(conn)
-              reject(e)
-            })
-        })
+        this.pool
+          .acquire()
+          .promise.then(conn => {
+            conn
+              .query(query)
+              .then(response => {
+                this.pool.release(conn)
+                resolve(response)
+              })
+              .catch(e => {
+                this.pool.release(conn)
+                reject(e)
+              })
+          })
+          .catch(e => {
+            if (e instanceof TimeoutError) {
+              // which means error occured during creation of connection,
+              // so use the error from this.error set by event
+              reject(this.error)
+            }
+            // else it's a query related API error, only happens if propagateCreateError is set to true
+            reject(e)
+          })
       })
     })
   }
@@ -115,10 +146,8 @@ class VNDB {
   /**
    * Destroy this client and close any open connections
    */
-  destroy(): void {
-    this.pool.drain().then(() => {
-      this.pool.clear()
-    })
+  destroy(): Promise<PromiseInspection<{}> | PromiseInspection<void>> {
+    return this.pool.destroy()
   }
 }
 

@@ -1,6 +1,6 @@
 import tls from 'tls'
 import { randomBytes } from 'crypto'
-import { wait, parseResponse, VNDBResponse, VNDBError } from './utils'
+import { wait, parseResponse, errorParser, VNDBResponse, VNDBError } from './utils'
 
 /**
  * A VNDB connection object. Uses a TLS Socket to provide the connection
@@ -26,17 +26,19 @@ class VNDBConnection {
    * @param host VNDB API hostname
    * @param port VNDB API port (use the TLS port, not the TCP one)
    * @param encoding Type of encoding used
+   * @param timeoutInterval Time to wait for connection to establish. If connection takes longer, reject with an error
    * @return Resolves once the socket has connected to the server
    */
-  connect(host: string, port: number, encoding = 'utf-8'): Promise<void> {
+  connect(host: string, port: number, encoding = 'utf-8', timeoutInterval = 30000): Promise<void> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.socket = undefined
         reject({
           code: 'CONTIMEOUT',
           message: 'Connection timed out',
+          status: 'error',
         })
-      }, 30000)
+      }, timeoutInterval)
 
       this.socket = tls.connect({ host, port }, () => {
         this.socket?.setEncoding(encoding)
@@ -48,7 +50,7 @@ class VNDBConnection {
 
       this.socket.once('error', e => {
         this.socket = undefined
-        reject({ ...e, message: 'Connection failed' })
+        reject({ ...e, message: 'Connection failed', status: 'error' })
       })
     })
   }
@@ -61,10 +63,11 @@ class VNDBConnection {
   login(clientName: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.socket == undefined) {
-        reject({ code: 'NOTCONNECTED', message: 'Please connect first' })
+        reject({ code: 'NOTCONNECTED', message: 'Please connect first', status: 'error' })
       }
 
       this.socket?.once('error', e => {
+        this.disconnect()
         reject(e)
       })
 
@@ -76,7 +79,8 @@ class VNDBConnection {
           this.socket?.removeAllListeners('data')
           resolve()
         } else {
-          reject({ code: 'LOGINREJECT', message: response })
+          this.disconnect()
+          reject({ ...errorParser(response), code: 'LOGINREJECT', status: 'error' })
         }
       })
 
@@ -110,7 +114,7 @@ class VNDBConnection {
     return new Promise((resolve, reject) => {
       // If not connected, error
       if (this.socket == undefined) {
-        reject({ code: 'NOTCONNECTED', message: 'Please connect first' })
+        reject({ code: 'NOTCONNECTED', message: 'Please connect first', status: 'error' })
       }
 
       // Actions to perform when data is recieved
