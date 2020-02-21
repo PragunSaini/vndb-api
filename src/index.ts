@@ -8,39 +8,78 @@ import { PromiseInspection } from 'tarn/lib/PromiseInspection'
  * An object that contains the various connection options used to connect to the VNDB API
  */
 interface ConnectionOptions {
+  /**
+   * The VNDB API hostname
+   * @default api.vndb.org
+   */
   host?: string
+  /**
+   * The VNDB API port (use the TLS port)
+   * @default 19535
+   */
   port?: number
+  /**
+   * The encoding to use
+   * @default utf-8
+   */
   encoding?: string
-  commandLimit?: number
-  commandInterval?: number
+  /**
+   * The max number of queries allowed to send per [[queryInterval]] milliseconds
+   * @default 10
+   */
+  queryLimit?: number
+  /**
+   * The time limit in which at most [[queryLimit]] queries are allowed to send (in milliseconds)
+   * @default 30000
+   */
+  queryInterval?: number
+  /**
+   * The minimum number of connections to the API to keep in the pool
+   * @default 1
+   */
   minConnection?: number
+  /**
+   * The maximum number of connections to the API allowed
+   * @default 10
+   */
   maxConnection?: number
-  connectionTimeout?: number
+  /**
+   * Unused/Free connections in the pool are destroyed after this many milliseconds
+   * @default 30000
+   */
   idleTimeoutMillis?: number
+  /**
+   * If a connection is not established within this many milliseconds, an error with the corresponding reason is generated
+   * @default 30000
+   */
   acquireTimeout?: number
+  /**
+   * If this is true, then the client errors out the first time unable to establish a connection and does not retry.
+   * If this is false, then the client will retry for [[acquireTimeout]] milliseconds to establish a connection
+   */
   propagateCreateError?: boolean
 }
 
 /**
+ * @hidden
  * The default connection options, allows 10 requests per 30 seconds and 1 to 10 connections, you can them by passing your own connection options
  */
 const defaultOptions: ConnectionOptions = {
   host: 'api.vndb.org',
   port: 19535,
   encoding: 'utf-8',
-  commandLimit: 10,
-  commandInterval: 30000,
+  queryLimit: 10,
+  queryInterval: 30000,
   minConnection: 1,
   maxConnection: 10,
-  connectionTimeout: 30000,
   idleTimeoutMillis: 30000,
-  acquireTimeout: 60000,
+  acquireTimeout: 30000,
   propagateCreateError: false,
 }
 
 /**
- * Represents the main VNDB API client
- * Uses Rate Limiting and Connection Pooling for maximum efficiency according to the limits described by the VNDB API
+ * Represents the main VNDB API client.
+ * Uses Rate Limiting and Connection Pooling for maximum efficiency according to the limits described by the VNDB API.
  * @see {@link https://vndb.org/d11}
  */
 class VNDB {
@@ -54,30 +93,30 @@ class VNDB {
    * @hidden
    * Used to store the error object for any error during creation of a connection
    */
-  private error: Error | undefined
+  private error: object | undefined
 
   /**
-   * Creates a new VNDB client
+   * Creates a new VNDB client.
    * @param clientName A custom name used to identify the client connecting to the API
-   * @param options Connection options used to connect to the API, any option not provided will be retrieved from [[defaultOptions]]
+   * @param options Connection options used to connect to the API, defaults will be used for any option not provided
    */
   constructor(clientName: string, options?: ConnectionOptions) {
+    // Update any custom provided options
     options = filterObject(options)
     this.options = { ...defaultOptions, ...options }
-    this.limiter = new RateLimiter(this.options.commandLimit as number, this.options.commandInterval as number)
+
+    // Create a rate limiter
+    this.limiter = new RateLimiter(this.options.queryLimit as number, this.options.queryInterval as number)
+
+    // Create a connection pool
     this.pool = new Pool({
       create: (): PromiseLike<VNDBConnection> => {
         return new Promise((resolve, reject) => {
           const conn = new VNDBConnection()
-          conn
-            .connect(
-              this.options.host as string,
-              this.options.port as number,
-              this.options.encoding as string,
-              this.options.connectionTimeout as number,
-            )
+          conn // first connect to the API
+            .connect(this.options.host as string, this.options.port as number, this.options.encoding as string)
             .then(() => {
-              conn
+              conn // then login using the provided client name
                 .login(clientName)
                 .then(() => {
                   resolve(conn)
@@ -91,6 +130,7 @@ class VNDB {
             })
         })
       },
+
       destroy: (conn: VNDBConnection): Promise<void> => {
         return conn.disconnect()
       },
@@ -109,15 +149,16 @@ class VNDB {
   }
 
   /**
-   * Send a query to the VNDB API by creating a [[VNDBConnection]]
-   * @param query A VNDB API compatible query string, @see {@link https://vndb.org/d11}
+   * Send a query to the VNDB API by creating a [[VNDBConnection]].
+   * @param query A VNDB API compatible query string
+   * @see {@link https://vndb.org/d11}
    * @return Resolves when the response is recieved
    */
   query(query: string): Promise<VNDBResponse> {
     return new Promise((resolve, reject) => {
       this.limiter.removeTokens(1, () => {
         this.pool
-          .acquire()
+          .acquire() // get a connection from the pool
           .promise.then(conn => {
             conn
               .query(query)
@@ -132,7 +173,15 @@ class VNDB {
           })
           .catch(e => {
             if (e instanceof TimeoutError) {
-              // which means error occured during creation of connection,
+              // If error is due to timeout
+              if (this.error == undefined) {
+                reject({
+                  code: 'CONTIMEOUT',
+                  message: 'Connection timed out',
+                  status: 'error',
+                })
+              }
+              // otherwise error occured during creation of connection,
               // so use the error from this.error set by event
               reject(this.error)
             }
@@ -144,7 +193,8 @@ class VNDB {
   }
 
   /**
-   * Destroy this client and close any open connections
+   * Destroy this client and close any open connections.
+   * @return Resolves when the client is destroyed
    */
   destroy(): Promise<PromiseInspection<{}> | PromiseInspection<void>> {
     return this.pool.destroy()

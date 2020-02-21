@@ -20,26 +20,6 @@ describe('VNDB Connection Object', () => {
 
   let conn: VNDBConnection
 
-  test('Invalid hostname', async () => {
-    conn = new VNDBConnection()
-    try {
-      await conn.connect('thisisinvalidhost', defaultOptions.port)
-    } catch (e) {
-      expect(e.code == 'CONTIMEOUT' || e.code == 'ENOTFOUND').toBe(true)
-      expect(conn.socket).toBeUndefined()
-    }
-  })
-
-  test('Invalid port times out', async () => {
-    conn = new VNDBConnection()
-    try {
-      await conn.connect(defaultOptions.host, 0)
-    } catch (e) {
-      expect(e.code == 'CONTIMEOUT' || e.code == 'ENOTFOUND').toBe(true)
-      expect(conn.socket).toBeUndefined()
-    }
-  })
-
   test('Connection established', async () => {
     conn = new VNDBConnection()
     await conn.connect(defaultOptions.host, defaultOptions.port)
@@ -150,8 +130,4 @@ describe('VNDB Connection Query', () => {
   afterEach(async () => {
     await conn.disconnect()
   })
-})
-
-test('just coz', () => {
-  expect('coz').toBe('coz')
 })

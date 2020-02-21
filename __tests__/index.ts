@@ -33,7 +33,7 @@ describe('VNDB Client initialization tests', () => {
   })
 
   test('Invalid client name gets rejected', async () => {
-    vndb = new VNDB('', { acquireTimeout: 5000, connectionTimeout: 2500 })
+    vndb = new VNDB('', { acquireTimeout: 5000 })
     try {
       await vndb.query('dbstats')
     } catch (e) {
@@ -43,20 +43,29 @@ describe('VNDB Client initialization tests', () => {
   })
 
   test('Invalid host gets rejected', async () => {
-    vndb = new VNDB('dio', { host: 'dio.ora', acquireTimeout: 5000, connectionTimeout: 2500 })
+    vndb = new VNDB('dio', { host: 'dioora', acquireTimeout: 5000 })
     try {
       await vndb.query('dbstats')
     } catch (e) {
-      expect(e.code).toBe('ENOTFOUND')
+      expect(e.code == 'CONTIMEOUT' || e.code == 'ENOTFOUND').toBe(true)
+    }
+  })
+
+  test('Invalid port gets rejected', async () => {
+    vndb = new VNDB('dio', { port: 6666, acquireTimeout: 5000 })
+    try {
+      await vndb.query('dbstats')
+    } catch (e) {
+      expect(e.code == 'CONTIMEOUT' || e.code == 'ENOTFOUND').toBe(true)
     }
   })
 
   test('Invalid host rejected with propagateError option', async () => {
-    vndb = new VNDB('dio', { host: 'dio.ora', propagateCreateError: true, connectionTimeout: 2500 })
+    vndb = new VNDB('dio', { host: 'dio.ora', propagateCreateError: true })
     try {
       await vndb.query('dbstats')
     } catch (e) {
-      expect(e.code).toBe('ENOTFOUND')
+      expect(e.code == 'CONTIMEOUT' || e.code == 'ENOTFOUND').toBe(true)
     }
   })
 
@@ -67,23 +76,23 @@ describe('VNDB Client initialization tests', () => {
 
 describe('Query using the client', () => {
   jest.setTimeout(30000)
-  const client = new VNDB('MomsSpaghetti', { propagateCreateError: true })
+  const vndb = new VNDB('MomsSpaghetti', { propagateCreateError: true })
 
   test('dbstats query', async () => {
-    const resp = await client.query('dbstats')
+    const resp = await vndb.query('dbstats')
     expect(resp.status).toBe('dbstats')
     expect(resp.searchType).toBe('dbstats')
   })
 
   test('vn query', async () => {
-    const resp = await client.query('get vn basic (id = 4)')
+    const resp = await vndb.query('get vn basic (id = 4)')
     expect(resp.status).toBe('results')
     expect(resp.searchType).toBe('vn')
   })
 
   test('error query', async () => {
     try {
-      await client.query('get vn basic (id = 4444444)')
+      await vndb.query('get vn basic (id = 4444444)')
     } catch (e) {
       expect(e.status).toBe('error')
       expect(e.searchType).toBe('get vn basic (id = 4444444)')
@@ -91,6 +100,6 @@ describe('Query using the client', () => {
   })
 
   afterAll(async () => {
-    await client.destroy()
+    await vndb.destroy()
   })
 })

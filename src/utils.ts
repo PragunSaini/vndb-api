@@ -1,5 +1,26 @@
 /**
- * Return a similar object but with all null or undefined properties removed
+ * Represents a general Response object, can have varying types of properties depending on the request.
+ * @see {@link https://vndb.org/d11}
+ */
+interface VNDBResponse {
+  status?: string
+  searchType?: string
+  // eslint-disable-next-line
+  [key: string]: any
+}
+
+/**
+ * Represents an Error Response object.
+ */
+interface VNDBError extends VNDBResponse {
+  id?: string
+  msg?: string
+  fullwait?: number
+  field?: string
+}
+
+/**
+ * Return a similar object but with all null or undefined properties removed.
  * @param obj The object to be filtered
  */
 function filterObject(obj: object | undefined): object {
@@ -10,7 +31,7 @@ function filterObject(obj: object | undefined): object {
 }
 
 /**
- * Just a helper function to wait for a certain amount of time
+ * Just a helper function to wait for a certain amount of time.
  * @param duration Amount of time to wait for (in milliseconds)
  */
 function wait(duration: number): Promise<void> {
@@ -20,27 +41,7 @@ function wait(duration: number): Promise<void> {
 }
 
 /**
- * Represents a general Response object, can have varying types of properties depending on the request, @see {@link https://vndb.org/d11}
- */
-interface VNDBResponse {
-  status?: string
-  searchType?: string
-  // eslint-disable-next-line
-  [key: string]: any
-}
-
-/**
- * Represents an Error Response object
- */
-interface VNDBError extends VNDBResponse {
-  id?: string
-  msg?: string
-  fullwait?: number
-  field?: string
-}
-
-/**
- * Converts the raw response to JSON and adds the status and search type to response object
+ * Converts the raw response to JSON and adds the status and search type to response object.
  * @param query The query string
  * @param response THe raw response from VNDB
  * @return Response in JSON form
@@ -65,7 +66,7 @@ function parseResponse(query: string, response: string): VNDBResponse {
 }
 
 /**
- * Utility to convert API errors to valid JSON format, only used for connection/login errors, query errors are handled by [[parseResponse]]
+ * Utility to convert API errors to valid JSON format, only used for connection/login errors, query errors are handled by [[parseResponse]].
  * @param error The raw error response
  * @return Error object
  */

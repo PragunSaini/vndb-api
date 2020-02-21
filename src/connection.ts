@@ -3,10 +3,13 @@ import { randomBytes } from 'crypto'
 import { wait, parseResponse, errorParser, VNDBResponse, VNDBError } from './utils'
 
 /**
- * A VNDB connection object. Uses a TLS Socket to provide the connection
+ * A VNDB connection object. Uses a TLS Socket to provide the connection.
  */
 class VNDBConnection {
-  /** The end-of-line character */
+  /**
+   * @hidden
+   * The end-of-line character
+   */
   private eol: string
   /** The TLS socket object */
   public socket: tls.TLSSocket | undefined = undefined
@@ -14,7 +17,7 @@ class VNDBConnection {
   public id: string
 
   /**
-   * Create a new connection object
+   * Create a new connection object.
    */
   constructor() {
     this.eol = '\x04'
@@ -22,29 +25,18 @@ class VNDBConnection {
   }
 
   /**
-   * Create a socket and connect it to the VNDB API
+   * Initialize a socket and connect it to the VNDB API
    * @param host VNDB API hostname
    * @param port VNDB API port (use the TLS port, not the TCP one)
    * @param encoding Type of encoding used
-   * @param timeoutInterval Time to wait for connection to establish. If connection takes longer, reject with an error
    * @return Resolves once the socket has connected to the server
    */
-  connect(host: string, port: number, encoding = 'utf-8', timeoutInterval = 30000): Promise<void> {
+  connect(host: string, port: number, encoding = 'utf-8'): Promise<void> {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.socket = undefined
-        reject({
-          code: 'CONTIMEOUT',
-          message: 'Connection timed out',
-          status: 'error',
-        })
-      }, timeoutInterval)
-
       this.socket = tls.connect({ host, port }, () => {
         this.socket?.setEncoding(encoding)
         this.socket?.removeAllListeners('error')
         this.socket?.removeAllListeners('connect')
-        clearTimeout(timeout)
         resolve()
       })
 
@@ -89,7 +81,7 @@ class VNDBConnection {
   }
 
   /**
-   * Used to end the connection
+   * Used to end the connection.
    * @return Resolves once the connection is ended
    */
   disconnect(): Promise<void> {
@@ -106,8 +98,9 @@ class VNDBConnection {
   }
 
   /**
-   * Used to send a query to the VNDB API
-   * @param query A VNDB API compatible query string, @see {@link https://vndb.org/d11}
+   * Used to send a query to the VNDB API.
+   * @param query A VNDB API compatible query string
+   * @see {@link https://vndb.org/d11}
    * @return Resolves when the response is recieved
    */
   query(query: string): Promise<VNDBResponse> {
@@ -141,6 +134,7 @@ class VNDBConnection {
             reject(error)
           }
         } else {
+          // if no error, then resolve
           resolve(response)
         }
       })
