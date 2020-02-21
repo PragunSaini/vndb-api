@@ -1,10 +1,11 @@
-[![codecov](https://codecov.io/gh/PragunSaini/vndb-api/branch/master/graph/badge.svg)](https://codecov.io/gh/PragunSaini/vndb-api) [![Build Status](https://travis-ci.org/PragunSaini/vndb-api.svg?branch=master)](https://travis-ci.org/PragunSaini/vndb-api)
+[![codecov](https://codecov.io/gh/PragunSaini/vndb-api/branch/master/graph/badge.svg)](https://codecov.io/gh/PragunSaini/vndb-api) [![Build Status](https://travis-ci.org/PragunSaini/vndb-api.svg?branch=master)](https://travis-ci.org/PragunSaini/vndb-api) [![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](https://pragunsaini.github.io/vndb-api/)
 
 ## VNDB API
 
 This is a Node.js API for [VNDB (the Visual Novel Database)](https://vndb.org/).
 VNDB provides it's own public API but it's not the best in terms of usability.
 This library provides an easily usable and intuitive Promise based interface to connect to and query the VNDB API.
+The docs are available [here](https://pragunsaini.github.io/vndb-api/)
 
 ### HIGHLIGHTS
 

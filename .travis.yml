@@ -16,12 +16,14 @@ script:
   - npm test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - if [ -n "$GITHUB_API_KEY" ]; then
-    cd "$TRAVIS_BUILD_DIR"
-    git checkout gh-pages
-    npm run docs
-    git add .
-    git -c user.name='travis' -c user.email='travis' commit -m 'Generated new docs'
-    git push -f -q https://PragunSaini:$GITHUB_API_TOKEN@github.com/PragunSaini/vndb-api-gh-pages gh-pages &>/dev/null
-    cd "$TRAVIS_BUILD_DIR"
-  fi
+  - |
+    if [ -n "$GITHUB_API_KEY" ]; then
+      cd "$TRAVIS_BUILD_DIR"
+      git checkout -b gh-pages
+      npm run docs
+      mv docs/* .
+      git add .
+      git -c user.name='travis' -c user.email='travis' commit -m 'Generated new docs'
+      git push -f -q https://PragunSaini:$GITHUB_API_KEY@github.com/PragunSaini/vndb-api.git gh-pages &>/dev/null
+      cd "$TRAVIS_BUILD_DIR"
+    fi
