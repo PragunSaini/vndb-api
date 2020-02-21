@@ -18,7 +18,7 @@
     "postversion": "git push && git push --tags"
   },
   "files": [
-    "lib/*/**"
+    "lib/**/*"
   ],
   "repository": {
     "type": "git",
