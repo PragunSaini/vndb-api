@@ -145,4 +145,4 @@ class VNDBConnection {
   }
 }
 
-export default VNDBConnection
+export = VNDBConnection

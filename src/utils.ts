@@ -2,7 +2,7 @@
  * Represents a general Response object, can have varying types of properties depending on the request.
  * @see {@link https://vndb.org/d11}
  */
-interface VNDBResponse {
+export interface VNDBResponse {
   status?: string
   searchType?: string
   // eslint-disable-next-line
@@ -12,7 +12,7 @@ interface VNDBResponse {
 /**
  * Represents an Error Response object.
  */
-interface VNDBError extends VNDBResponse {
+export interface VNDBError extends VNDBResponse {
   id?: string
   msg?: string
   fullwait?: number
@@ -23,7 +23,7 @@ interface VNDBError extends VNDBResponse {
  * Return a similar object but with all null or undefined properties removed.
  * @param obj The object to be filtered
  */
-function filterObject(obj: object | undefined): object {
+export function filterObject(obj: object | undefined): object {
   if (obj == undefined) {
     return {}
   }
@@ -31,10 +31,10 @@ function filterObject(obj: object | undefined): object {
 }
 
 /**
- * Just a helper function to wait for a certain amount of time.
+ * Just a helper export function to wait for a certain amount of time.
  * @param duration Amount of time to wait for (in milliseconds)
  */
-function wait(duration: number): Promise<void> {
+export function wait(duration: number): Promise<void> {
   return new Promise(resolve => {
     setTimeout(resolve, duration)
   })
@@ -46,7 +46,7 @@ function wait(duration: number): Promise<void> {
  * @param response THe raw response from VNDB
  * @return Response in JSON form
  */
-function parseResponse(query: string, response: string): VNDBResponse {
+export function parseResponse(query: string, response: string): VNDBResponse {
   const status: string = (response.match(/(\S+) {/) as RegExpMatchArray)[1]
   const rawBody: string = (response.match(/{.+}/) as RegExpMatchArray)[0]
   const body: VNDBResponse = JSON.parse(rawBody)
@@ -70,12 +70,10 @@ function parseResponse(query: string, response: string): VNDBResponse {
  * @param error The raw error response
  * @return Error object
  */
-function errorParser(error: string): VNDBError {
+export function errorParser(error: string): VNDBError {
   const status: string = (error.match(/(\S+) {/) as RegExpMatchArray)[1]
   const rawBody: string = (error.match(/{.+}/) as RegExpMatchArray)[0]
   const body: VNDBError = JSON.parse(rawBody)
   body.status = status
   return body
 }
-
-export { filterObject, wait, parseResponse, errorParser, VNDBResponse, VNDBError }

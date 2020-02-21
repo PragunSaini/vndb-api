@@ -201,4 +201,4 @@ class VNDB {
   }
 }
 
-export default VNDB
+export = VNDB
