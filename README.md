@@ -5,7 +5,8 @@
 This is a Node.js API for [VNDB (the Visual Novel Database)](https://vndb.org/).
 VNDB provides it's own public API but it's not the best in terms of usability.
 This library provides an easily usable and intuitive Promise based interface to connect to and query the VNDB API.
-The docs are available [here](https://pragunsaini.github.io/vndb-api/)
+
+The **docs** are available [here](https://pragunsaini.github.io/vndb-api/).
 
 ### HIGHLIGHTS
 
