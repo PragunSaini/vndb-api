@@ -63,8 +63,14 @@ class VNDBConnection {
         reject(e)
       })
 
+      let chunk = ''
       this.socket?.on('data', data => {
-        const chunk: string = data.toString()
+        chunk += data.toString()
+        if (chunk.indexOf(this.eol) == -1) {
+          // All data yet not recieved
+          return
+        }
+
         const response = chunk.substring(0, chunk.indexOf(this.eol))
         if (response == 'ok') {
           this.socket?.removeAllListeners('error')
@@ -110,9 +116,17 @@ class VNDBConnection {
         reject({ code: 'NOTCONNECTED', message: 'Please connect first', status: 'error' })
       }
 
+      // To join the data packets
+      let chunk = ''
+
       // Actions to perform when data is recieved
       this.socket?.on('data', data => {
-        const chunk: string = data.toString()
+        chunk += data.toString()
+        if (chunk.indexOf(this.eol) == -1) {
+          // All data not yet recieved
+          return
+        }
+
         let response: string | VNDBResponse = chunk.substring(0, chunk.indexOf(this.eol))
         this.socket?.removeAllListeners('data')
         response = parseResponse(query, response)
