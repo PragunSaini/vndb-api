@@ -1,6 +1,6 @@
 {
   "name": "vndb-api",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "An API wrapper for the vndb.org API",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
